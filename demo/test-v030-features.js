@@ -1,5 +1,5 @@
 // 测试v0.3.0新功能 - 直接使用DocRegistry
-import { DocRegistry } from "./dist/docx-utils.js";
+import { DocRegistry } from "../dist/docx-utils.js";
 import { writeFile } from "node:fs/promises";
 
 const testV030Features = async () => {
