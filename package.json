@@ -26,12 +26,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/docx-mcp.git"
+    "url": "git+https://github.com/lihongjie0209/docx-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/docx-mcp/issues"
+    "url": "https://github.com/lihongjie0209/docx-mcp/issues"
   },
-  "homepage": "https://github.com/your-username/docx-mcp#readme",
+  "homepage": "https://github.com/lihongjie0209/docx-mcp#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
