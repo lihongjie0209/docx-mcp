@@ -4,6 +4,22 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+        type: string
+      create_tag:
+        description: 'Create git tag for this version'
+        required: false
+        default: true
+        type: boolean
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -14,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
+      is_prerelease: ${{ steps.version.outputs.IS_PRERELEASE }}
       
     steps:
       - name: Checkout code
@@ -25,20 +42,46 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Validate tag format
-        run: |
-          if [[ ! "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
-            echo "❌ Invalid tag format. Expected: v1.0.0 or v1.0.0-beta.1"
-            exit 1
-          fi
-          echo "✅ Tag format is valid"
-
-      - name: Extract version from tag
+      - name: Determine version and validate
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger
+            VERSION="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+            
+            # Validate manual version format
+            if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+              echo "❌ Invalid version format. Expected: 1.0.0 or 1.0.0-beta.1"
+              exit 1
+            fi
+            
+            echo "📦 Manual publish requested for version: $VERSION"
+          else
+            # Tag trigger
+            if [[ ! "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+              echo "❌ Invalid tag format. Expected: v1.0.0 or v1.0.0-beta.1"
+              exit 1
+            fi
+            
+            VERSION=${GITHUB_REF#refs/tags/v}
+            IS_PRERELEASE="${{ contains(github.ref_name, '-') }}"
+            
+            echo "📦 Tag-triggered publish for version: $VERSION"
+          fi
+          
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Version to publish: $VERSION"
+          echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "✅ Version validation passed: $VERSION"
+
+      - name: Create tag for manual publish
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_tag == 'true'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag v${{ steps.version.outputs.VERSION }}
+          git push origin v${{ steps.version.outputs.VERSION }}
+          echo "🏷️ Created and pushed tag v${{ steps.version.outputs.VERSION }}"
 
       - name: Install dependencies
         run: npm ci
@@ -114,8 +157,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          tag_name: v${{ needs.validate.outputs.version }}
+          release_name: Release v${{ needs.validate.outputs.version }}
           body: |
             ## 🎉 Version ${{ needs.validate.outputs.version }}
             
@@ -138,10 +181,13 @@ jobs:
             ```
             
             ### 📋 What's New
-            See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for detailed changes.
+            ${{ github.event_name == 'workflow_dispatch' && 'Manual release triggered.' || 'See the commit history for detailed changes.' }}
+            
+            ### 🚀 Trigger
+            ${{ github.event_name == 'workflow_dispatch' && '**Manual Publish** 🖱️' || '**Tag Push** 🏷️' }}
             
             ---
             
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v0.1.0...${{ github.ref_name }}
+            **Full Changelog**: https://github.com/${{ github.repository }}/commits/v${{ needs.validate.outputs.version }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ needs.validate.outputs.is_prerelease == 'true' }}

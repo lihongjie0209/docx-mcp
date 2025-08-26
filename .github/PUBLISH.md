@@ -1,7 +1,9 @@
 # GitHub Actions 自动发布设置
 
 ## 📝 概述
-这个工作流会在你推送 `v*` 格式的标签时自动发布到 NPM。
+这个工作流支持两种发布方式：
+1. **自动发布**：推送 `v*` 格式的标签时触发
+2. **手动发布**：通过 GitHub Actions 界面手动触发
 
 ## 🔧 设置步骤
 
@@ -25,7 +27,9 @@
    - Value: 粘贴从 NPM 获取的 token
    - 点击 `Add secret`
 
-### 2. 使用方法
+## 🚀 发布方式
+
+### 方式1: 自动发布（推荐）
 
 创建并推送标签来触发自动发布：
 
@@ -41,6 +45,22 @@ git push origin v0.2.0
 ```bash
 git tag v0.2.0 && git push origin v0.2.0
 ```
+
+### 方式2: 手动发布
+
+1. 访问 GitHub Actions 页面：https://github.com/lihongjie0209/docx-mcp/actions
+2. 点击左侧的 "NPM Publish" 工作流
+3. 点击右上角的 "Run workflow" 按钮
+4. 填写参数：
+   - **Version**: 要发布的版本号（如 `0.2.0`）
+   - **Create git tag**: 是否创建 Git 标签（推荐勾选）
+   - **Mark as prerelease**: 是否标记为预发布版本
+5. 点击 "Run workflow"
+
+#### 手动发布参数说明：
+- **Version**: 只需要输入版本号，不需要 `v` 前缀（如输入 `0.2.0` 而不是 `v0.2.0`）
+- **Create git tag**: 勾选后会自动创建 `v{version}` 格式的标签
+- **Mark as prerelease**: 勾选后 GitHub Release 会标记为预发布版本
 
 ### 3. 支持的标签格式
 
