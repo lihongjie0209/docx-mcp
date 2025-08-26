@@ -20,6 +20,11 @@ on:
         required: false
         default: false
         type: boolean
+      force_publish:
+        description: 'Force publish even if version exists'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -31,6 +36,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
       is_prerelease: ${{ steps.version.outputs.IS_PRERELEASE }}
+      should_publish: ${{ steps.check-version.outputs.SHOULD_PUBLISH }}
       
     steps:
       - name: Checkout code
@@ -74,8 +80,34 @@ jobs:
           echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_OUTPUT
           echo "✅ Version validation passed: $VERSION"
 
+      - name: Check if version exists on NPM
+        id: check-version
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          FORCE_PUBLISH="${{ github.event.inputs.force_publish }}"
+          
+          echo "🔍 Checking if version $VERSION exists on NPM..."
+          
+          if npm view @docx-mcp/docx-mcp@$VERSION version >/dev/null 2>&1; then
+            echo "📦 Version $VERSION already exists on NPM"
+            
+            if [ "$FORCE_PUBLISH" = "true" ]; then
+              echo "⚠️ Force publish enabled, will continue anyway"
+              echo "SHOULD_PUBLISH=true" >> $GITHUB_OUTPUT
+              echo "VERSION_EXISTS=true" >> $GITHUB_OUTPUT
+            else
+              echo "⏭️ Skipping publish as version already exists"
+              echo "SHOULD_PUBLISH=false" >> $GITHUB_OUTPUT
+              echo "VERSION_EXISTS=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "✅ Version $VERSION does not exist, will proceed with publish"
+            echo "SHOULD_PUBLISH=true" >> $GITHUB_OUTPUT
+            echo "VERSION_EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create tag for manual publish
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_tag == 'true'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_tag == 'true' && steps.check-version.outputs.SHOULD_PUBLISH == 'true'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -88,19 +120,23 @@ jobs:
           fi
 
       - name: Install dependencies
+        if: steps.check-version.outputs.SHOULD_PUBLISH == 'true'
         run: npm ci
 
       - name: Lint and type check
+        if: steps.check-version.outputs.SHOULD_PUBLISH == 'true'
         run: |
           npm run check --if-present
           echo "✅ Type checking passed"
 
       - name: Build project
+        if: steps.check-version.outputs.SHOULD_PUBLISH == 'true'
         run: |
           npm run build
           echo "✅ Build completed"
 
       - name: Verify build artifacts
+        if: steps.check-version.outputs.SHOULD_PUBLISH == 'true'
         run: |
           if [ ! -d "dist" ]; then
             echo "❌ Build artifacts not found"
@@ -111,6 +147,7 @@ jobs:
   publish:
     needs: validate
     runs-on: ubuntu-latest
+    if: needs.validate.outputs.should_publish == 'true'
     
     steps:
       - name: Checkout code
@@ -195,3 +232,15 @@ jobs:
             **Full Changelog**: https://github.com/${{ github.repository }}/commits/v${{ needs.validate.outputs.version }}
           draft: false
           prerelease: ${{ needs.validate.outputs.is_prerelease == 'true' }}
+
+  skip-publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: needs.validate.outputs.should_publish == 'false'
+    
+    steps:
+      - name: Skip publish notification
+        run: |
+          echo "⏭️ Skipping publish for version ${{ needs.validate.outputs.version }}"
+          echo "📦 Version already exists on NPM"
+          echo "💡 Use 'force_publish: true' to override this behavior"

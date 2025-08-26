@@ -21,7 +21,9 @@ import {
   Header,
   Footer,
   PageNumber as DocxPageNumber,
-  NumberFormat
+  NumberFormat,
+  FootNotes,
+  FootnoteReferenceRun
 } from "docx";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
@@ -72,6 +74,12 @@ export type DocxJSON = {
     default?: any;
     first?: any;
     even?: any;
+  };
+  footnotes?: {
+    [key: string]: any;
+  };
+  endnotes?: {
+    [key: string]: any;
   };
   content: any[];
 };
@@ -270,6 +278,15 @@ export class DocRegistry {
       footers.even = this.createFooter(json.footers.even);
     }
 
+    // 创建脚注
+    const footnotes: { [key: string]: { children: Paragraph[] } } = {};
+    if (json.footnotes) {
+      for (const [id, footnoteContent] of Object.entries(json.footnotes)) {
+        const paragraphs = footnoteContent.children.map((block: any) => this.blockToDoc(block)).flat();
+        footnotes[id] = { children: paragraphs };
+      }
+    }
+
     const doc = new Document({
       sections: [{ 
         properties: sectionProperties, 
@@ -277,6 +294,7 @@ export class DocRegistry {
         headers,
         footers
       }],
+      footnotes,
       creator: json.meta?.creator,
       description: json.meta?.description,
       title: json.meta?.title,
@@ -318,6 +336,17 @@ export class DocRegistry {
       footers.even = this.createFooter(json.footers.even);
     }
 
+    // 创建脚注
+    const footnotes: { [key: string]: { children: Paragraph[] } } = {};
+    if (json.footnotes) {
+      for (const [id, footnoteContent] of Object.entries(json.footnotes)) {
+        const paragraphs = await Promise.all(
+          footnoteContent.children.map((block: any) => this.blockToDocAsync(block))
+        );
+        footnotes[id] = { children: paragraphs.flat() };
+      }
+    }
+
     const doc = new Document({
       sections: [{ 
         properties: sectionProperties, 
@@ -325,6 +354,7 @@ export class DocRegistry {
         headers,
         footers
       }],
+      footnotes,
       creator: json.meta?.creator,
       description: json.meta?.description,
       title: json.meta?.title,
@@ -409,8 +439,8 @@ export class DocRegistry {
     return new Paragraph(options);
   }
 
-  private inlineRuns(inlines: any[], inHyperlink = false): TextRun[] {
-    const runs: TextRun[] = [];
+  private inlineRuns(inlines: any[], inHyperlink = false): (TextRun | FootnoteReferenceRun)[] {
+    const runs: (TextRun | FootnoteReferenceRun)[] = [];
     for (const n of inlines) {
       if (!n) continue;
       if (n.type === "text") {
@@ -432,7 +462,13 @@ export class DocRegistry {
         }));
       } else if (n.type === "hyperlink") {
         runs.push(...this.inlineRuns(n.children || [], true));
+      } else if (n.type === "footnoteReference") {
+        runs.push(new FootnoteReferenceRun(n.footnoteId));
       }
+      // Note: Endnotes are not supported in current docx library version
+      // else if (n.type === "endnoteReference") {
+      //   runs.push(new EndnoteReference(n.endnoteId));
+      // }
     }
     return runs;
   }

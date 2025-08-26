@@ -1,0 +1,326 @@
+{
+  "meta": {
+    "title": "脚注功能完整测试",
+    "creator": "DOCX-MCP v0.5.0",
+    "subject": "测试各种脚注功能",
+    "description": "验证脚注功能的各种使用场景"
+  },
+  "footnotes": {
+    "1": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这是一个简单的脚注。"
+            }
+          ]
+        }
+      ]
+    },
+    "multi": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这个脚注包含",
+              "bold": true
+            },
+            {
+              "type": "text",
+              "text": "多种格式化文本"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "甚至包括多个段落。"
+            }
+          ]
+        }
+      ]
+    },
+    "with-hyperlink": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "包含超链接的脚注: "
+            },
+            {
+              "type": "hyperlink",
+              "url": "https://github.com/microsoft/vscode",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "VS Code GitHub"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "with-table": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "包含表格的脚注:"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "rows": [
+            {
+              "cells": [
+                {
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "项目",
+                          "bold": true
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "值",
+                          "bold": true
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "版本"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "v0.5.0"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "content": [
+    {
+      "type": "heading",
+      "level": 1,
+      "children": [
+        {
+          "type": "text",
+          "text": "脚注功能完整测试",
+          "bold": true
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "本文档测试各种脚注功能。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "基本脚注"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "这是一个基本的脚注示例"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "1"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "多段落脚注"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "脚注可以包含多个段落和格式化文本"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "multi"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "包含超链接的脚注"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "脚注中也可以包含超链接"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "with-hyperlink"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "包含表格的脚注"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "脚注甚至可以包含表格"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "with-table"
+        },
+        {
+          "type": "text",
+          "text": "，展示了强大的灵活性。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "多个脚注示例"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "一个段落可以包含多个脚注"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "1"
+        },
+        {
+          "type": "text",
+          "text": "，比如这个"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "multi"
+        },
+        {
+          "type": "text",
+          "text": "和那个"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "with-hyperlink"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    }
+  ]
+}

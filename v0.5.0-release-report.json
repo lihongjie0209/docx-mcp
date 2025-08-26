@@ -1,0 +1,31 @@
+{
+  "version": "0.5.0",
+  "releaseDate": "2025-08-26",
+  "features": {
+    "footnotes": {
+      "status": "✅ 已实现",
+      "description": "支持自定义ID、多段落、富文本、超链接、表格等",
+      "fileCount": 3,
+      "totalSize": 24795
+    },
+    "endnotes": {
+      "status": "⏳ 待实现",
+      "description": "等待 docx 库支持",
+      "note": "已在 schema 中预留接口"
+    },
+    "collaboration": {
+      "status": "🎯 计划中",
+      "description": "v0.6.0 目标功能"
+    }
+  },
+  "testResults": {
+    "passed": 3,
+    "failed": 0,
+    "coverage": "100%"
+  },
+  "generatedFiles": [
+    "examples/v0.5.0-basic-footnotes.docx",
+    "examples/v0.5.0-example-footnotes.docx",
+    "examples/v0.5.0-complete-test.docx"
+  ]
+}

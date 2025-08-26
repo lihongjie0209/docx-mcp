@@ -1,0 +1,245 @@
+{
+  "meta": {
+    "title": "脚注功能演示文档",
+    "creator": "DOCX-MCP v0.5.0",
+    "subject": "脚注和学术引用示例",
+    "description": "演示如何在文档中使用脚注进行学术引用和补充说明"
+  },
+  "footnotes": {
+    "1": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这是第一个脚注的内容。脚注通常用于提供额外信息或引用来源。"
+            }
+          ]
+        }
+      ]
+    },
+    "2": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Smith, J. (2023). "
+            },
+            {
+              "type": "text",
+              "text": "现代文档处理技术",
+              "italics": true
+            },
+            {
+              "type": "text",
+              "text": ". 学术出版社, 第123页."
+            }
+          ]
+        }
+      ]
+    },
+    "3": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "更多详细信息可参见官方文档: "
+            },
+            {
+              "type": "hyperlink",
+              "url": "https://example.com",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "https://example.com"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "technical": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "技术实现细节: 本功能基于 docx 库的 FootnoteReferenceRun 和 Document.footnotes API。"
+            }
+          ]
+        },
+        {
+          "type": "codeBlock",
+          "language": "javascript",
+          "code": "const doc = new Document({\n  footnotes: {\n    '1': { children: [paragraph] }\n  }\n});"
+        }
+      ]
+    }
+  },
+  "content": [
+    {
+      "type": "heading",
+      "level": 1,
+      "children": [
+        {
+          "type": "text",
+          "text": "脚注功能演示文档",
+          "bold": true
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "本文档演示了 DOCX-MCP v0.5.0 中新增的脚注功能。脚注是学术写作和专业文档中的重要元素"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "1"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "学术引用示例"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "在学术写作中，脚注常用于引用资料来源"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "2"
+        },
+        {
+          "type": "text",
+          "text": "。这种方式既保持了正文的简洁，又提供了必要的引用信息。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "补充说明示例"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "脚注也可以用于提供补充说明，如技术细节或相关链接"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "3"
+        },
+        {
+          "type": "text",
+          "text": "。这样可以让读者根据需要获取更多信息。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "技术实现说明"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "本脚注系统支持复杂内容，包括代码块、格式化文本和超链接"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "technical"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "children": [
+        {
+          "type": "text",
+          "text": "特性总结"
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "items": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "text": "支持自定义脚注ID（数字或字符串）"
+            }
+          ]
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "text": "脚注内容支持多段落、格式化文本、代码块等"
+            }
+          ]
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "text": "兼容学术写作和专业文档需求"
+            }
+          ]
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "text": "基于 docx 库的原生脚注API，确保兼容性"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

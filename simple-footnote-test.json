@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "title": "简单脚注测试",
+    "creator": "DOCX-MCP v0.5.0"
+  },
+  "footnotes": {
+    "1": {
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这是一个简单的脚注。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "content": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "text": "这是正文内容，有一个脚注引用"
+        },
+        {
+          "type": "footnoteReference",
+          "footnoteId": "1"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    }
+  ]
+}

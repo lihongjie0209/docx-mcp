@@ -81,6 +81,13 @@ export const DocxSchema = {
         even: { $ref: "#/$defs/HeaderFooterContent" }
       }
     },
+    footnotes: {
+      type: "object",
+      additionalProperties: false,
+      patternProperties: {
+        "^[a-zA-Z0-9_-]+$": { $ref: "#/$defs/NoteContent" }
+      }
+    },
     content: {
       type: "array",
       items: { $ref: "#/$defs/Block" }
@@ -145,7 +152,8 @@ export const DocxSchema = {
       type: "object",
       oneOf: [
         { $ref: "#/$defs/TextRun" },
-        { $ref: "#/$defs/Hyperlink" }
+        { $ref: "#/$defs/Hyperlink" },
+        { $ref: "#/$defs/FootnoteReference" }
       ]
     },
     TextRun: {
@@ -552,6 +560,37 @@ export const DocxSchema = {
         size: { type: "number", default: 12 },
         color: { type: "string", default: "#000000" }
       }
+    },
+    FootnoteReference: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "footnoteId"],
+      properties: {
+        type: { const: "footnoteReference" },
+        footnoteId: { type: "string" },
+        numberFormat: { 
+          enum: ["decimal", "upperRoman", "lowerRoman", "upperLetter", "lowerLetter", "symbol"],
+          default: "decimal"
+        },
+        customMark: { type: "string", description: "Custom reference mark (overrides numberFormat)" }
+      }
+    },
+    NoteContent: {
+      type: "object",
+      additionalProperties: false,
+      required: ["children"],
+      properties: {
+        children: {
+          type: "array",
+          items: { $ref: "#/$defs/Block" }
+        },
+        separator: {
+          type: "string",
+          enum: ["line", "none", "continuation"],
+          default: "line",
+          description: "Separator style before the note"
+        }
+      }
     }
   }
 } as const;
@@ -596,6 +635,9 @@ export type DocxJSON = {
     default?: HeaderFooterContent;
     first?: HeaderFooterContent;
     even?: HeaderFooterContent;
+  };
+  footnotes?: {
+    [key: string]: NoteContent;
   };
   content: any[];
 };
@@ -658,4 +700,16 @@ export type DocumentTitle = {
   italics?: boolean;
   size?: number;
   color?: string;
+};
+
+export type FootnoteReference = {
+  type: "footnoteReference";
+  footnoteId: string;
+  numberFormat?: "decimal" | "upperRoman" | "lowerRoman" | "upperLetter" | "lowerLetter" | "symbol";
+  customMark?: string;
+};
+
+export type NoteContent = {
+  children: any[];
+  separator?: "line" | "none" | "continuation";
 };
