@@ -25,6 +25,8 @@ A Node.js MCP server that lets clients create, query, edit, and save DOCX docume
 See `src/schema.ts` for the full schema. Key concepts:
 - **meta**: Document metadata (title, subject, creator, etc.)
 - **pageSettings**: Page size, orientation, margins, header/footer margins (NEW in v0.3.0)
+- **headers**: Page header configuration with default/first/even page support (NEW in v0.4.0)
+- **footers**: Page footer configuration with default/first/even page support (NEW in v0.4.0)
 - **content**: Array of blocks: heading, paragraph, table, image, codeBlock, list, pageBreak, horizontalRule, blockquote, infoBox, textBox
 - **Enhanced blocks**:
   - **CodeBlock**: `{ type: "codeBlock", language: "javascript", code: "...", showLineNumbers: true }`
@@ -36,6 +38,84 @@ See `src/schema.ts` for the full schema. Key concepts:
   - **TextBox**: `{ type: "textBox", children: [...] }` with border styling (NEW in v0.3.0)
   - **Enhanced TextRun**: Supports fontFamily, superScript, subScript, highlight, etc.
 - Each paragraph/heading uses inline runs (text, hyperlink) with rich formatting options
+
+### Headers & Footers Configuration (NEW in v0.4.0)
+```json
+{
+  "headers": {
+    "default": {
+      "alignment": "center",
+      "children": [
+        {
+          "type": "documentTitle",
+          "bold": true,
+          "size": 14,
+          "color": "#1f4788"
+        }
+      ]
+    },
+    "first": {
+      "alignment": "right",
+      "children": [
+        {
+          "type": "text",
+          "text": "Confidential Document",
+          "bold": true,
+          "color": "#cc0000"
+        }
+      ]
+    }
+  },
+  "footers": {
+    "default": {
+      "alignment": "center", 
+      "children": [
+        {
+          "type": "text",
+          "text": "Page "
+        },
+        {
+          "type": "pageNumber",
+          "format": "decimal"
+        },
+        {
+          "type": "text",
+          "text": " of "
+        },
+        {
+          "type": "pageNumber",
+          "format": "totalPages"
+        }
+      ]
+    }
+  }
+}
+```
+
+Supported header/footer elements:
+- **text**: Static text with styling options
+- **pageNumber**: Auto page numbering (decimal, upperRoman, lowerRoman, upperLetter, lowerLetter)
+- **currentDate**: Auto-updating date with custom format strings
+- **documentTitle**: References document meta.title
+- **image**: Images in headers/footers (base64, path, url)
+
+## New in v0.4.0 - Document Structure & Headers/Footers
+- ✅ **Headers & Footers System**: Comprehensive page header and footer support
+  - Default, first page, and even page headers/footers
+  - Rich content: text, page numbers, dates, document title, images
+  - Flexible alignment: left, center, right
+  - Advanced styling: fonts, colors, sizes, bold/italic
+- ✅ **Dynamic Content Elements**:
+  - `pageNumber`: Automatic page numbering with multiple formats (decimal, roman, letters)
+  - `currentDate`: Auto-updating dates with custom formats
+  - `documentTitle`: Reference document metadata
+  - `text`: Static text with full styling options
+  - `image`: Headers/footers images support
+- ✅ **Professional Layout Control**:
+  - Different headers/footers for first page vs. rest of document
+  - Odd/even page variations for book-style layouts
+  - Precise margin control for headers and footers
+  - Integration with existing page settings system
 
 ## New in v0.3.0 - Styles & Layout
 - ✅ **Page Settings**: Page size (A4, Letter, etc.), orientation, margins control

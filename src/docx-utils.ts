@@ -17,7 +17,11 @@ import {
   VerticalAlign,
   TableLayoutType,
   WidthType,
-  ShadingType
+  ShadingType,
+  Header,
+  Footer,
+  PageNumber as DocxPageNumber,
+  NumberFormat
 } from "docx";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
@@ -58,6 +62,16 @@ export type DocxJSON = {
     };
     headerMargin?: number;
     footerMargin?: number;
+  };
+  headers?: {
+    default?: any;
+    first?: any;
+    even?: any;
+  };
+  footers?: {
+    default?: any;
+    first?: any;
+    even?: any;
   };
   content: any[];
 };
@@ -232,8 +246,37 @@ export class DocRegistry {
     const children = json.content.map(block => this.blockToDoc(block)).flat();
     const sectionProperties = this.createSectionProperties(json.pageSettings);
 
+    // 创建页眉页脚
+    const headers: any = {};
+    const footers: any = {};
+
+    if (json.headers?.default) {
+      headers.default = this.createHeader(json.headers.default);
+    }
+    if (json.headers?.first) {
+      headers.first = this.createHeader(json.headers.first);
+    }
+    if (json.headers?.even) {
+      headers.even = this.createHeader(json.headers.even);
+    }
+
+    if (json.footers?.default) {
+      footers.default = this.createFooter(json.footers.default);
+    }
+    if (json.footers?.first) {
+      footers.first = this.createFooter(json.footers.first);
+    }
+    if (json.footers?.even) {
+      footers.even = this.createFooter(json.footers.even);
+    }
+
     const doc = new Document({
-      sections: [{ properties: sectionProperties, children }],
+      sections: [{ 
+        properties: sectionProperties, 
+        children,
+        headers,
+        footers
+      }],
       creator: json.meta?.creator,
       description: json.meta?.description,
       title: json.meta?.title,
@@ -251,8 +294,37 @@ export class DocRegistry {
     );
     const sectionProperties = this.createSectionProperties(json.pageSettings);
 
+    // 创建页眉页脚
+    const headers: any = {};
+    const footers: any = {};
+
+    if (json.headers?.default) {
+      headers.default = this.createHeader(json.headers.default);
+    }
+    if (json.headers?.first) {
+      headers.first = this.createHeader(json.headers.first);
+    }
+    if (json.headers?.even) {
+      headers.even = this.createHeader(json.headers.even);
+    }
+
+    if (json.footers?.default) {
+      footers.default = this.createFooter(json.footers.default);
+    }
+    if (json.footers?.first) {
+      footers.first = this.createFooter(json.footers.first);
+    }
+    if (json.footers?.even) {
+      footers.even = this.createFooter(json.footers.even);
+    }
+
     const doc = new Document({
-      sections: [{ properties: sectionProperties, children: children.flat() }],
+      sections: [{ 
+        properties: sectionProperties, 
+        children: children.flat(),
+        headers,
+        footers
+      }],
       creator: json.meta?.creator,
       description: json.meta?.description,
       title: json.meta?.title,
@@ -868,5 +940,157 @@ export class DocRegistry {
     });
     
     return result;
+  }
+
+  // 创建页眉
+  private createHeader(headerContent: any): Header {
+    if (!headerContent || !headerContent.children) {
+      return new Header({
+        children: [new Paragraph({ children: [] })]
+      });
+    }
+
+    const children = this.createHeaderFooterElements(headerContent.children);
+    const alignment = this.getAlignment(headerContent.alignment);
+
+    return new Header({
+      children: [
+        new Paragraph({
+          children,
+          alignment
+        })
+      ]
+    });
+  }
+
+  // 创建页脚
+  private createFooter(footerContent: any): Footer {
+    if (!footerContent || !footerContent.children) {
+      return new Footer({
+        children: [new Paragraph({ children: [] })]
+      });
+    }
+
+    const children = this.createHeaderFooterElements(footerContent.children);
+    const alignment = this.getAlignment(footerContent.alignment);
+
+    return new Footer({
+      children: [
+        new Paragraph({
+          children,
+          alignment
+        })
+      ]
+    });
+  }
+
+  // 创建页眉页脚元素
+  private createHeaderFooterElements(elements: any[]): (TextRun | ImageRun)[] {
+    const children: (TextRun | ImageRun)[] = [];
+
+    elements.forEach(element => {
+      switch (element.type) {
+        case "text":
+          children.push(new TextRun({
+            text: element.text,
+            bold: element.bold,
+            italics: element.italics,
+            underline: element.underline,
+            size: element.size ? element.size * 2 : 24, // Convert to half-points
+            color: element.color?.replace('#', '') || "000000",
+            font: element.fontFamily || "Arial"
+          }));
+          break;
+
+        case "pageNumber":
+          // 使用正确的页码API
+          children.push(new TextRun({
+            text: "",
+            children: [DocxPageNumber.CURRENT]
+          }));
+          break;
+
+        case "currentDate":
+          const currentDate = new Date();
+          const formattedDate = this.formatDate(currentDate, element.format || "MM/dd/yyyy");
+          children.push(new TextRun({
+            text: formattedDate,
+            bold: element.bold,
+            italics: element.italics,
+            size: element.size ? element.size * 2 : 24,
+            color: element.color?.replace('#', '') || "000000"
+          }));
+          break;
+
+        case "documentTitle":
+          // 从文档meta中获取标题
+          children.push(new TextRun({
+            text: "Document Title", // 这里需要传入实际的文档标题
+            bold: element.bold,
+            italics: element.italics,
+            size: element.size ? element.size * 2 : 24,
+            color: element.color?.replace('#', '') || "000000"
+          }));
+          break;
+
+        case "image":
+          // 页眉页脚中的图片处理（需要异步版本）
+          if (element.data) {
+            try {
+              const buffer = Buffer.from(element.data, 'base64');
+              children.push(new ImageRun({
+                data: buffer,
+                transformation: {
+                  width: element.width || 50,
+                  height: element.height || 50,
+                }
+              }));
+            } catch (error) {
+              console.warn("Failed to create header/footer image:", error);
+            }
+          }
+          break;
+      }
+    });
+
+    return children;
+  }
+
+  // 获取对齐方式
+  private getAlignment(alignment?: string) {
+    switch (alignment) {
+      case "center": return AlignmentType.CENTER;
+      case "right": return AlignmentType.RIGHT;
+      default: return AlignmentType.LEFT;
+    }
+  }
+
+  // 获取页码格式
+  private getPageNumberFormat(format?: string) {
+    switch (format) {
+      case "upperRoman":
+        return NumberFormat.UPPER_ROMAN;
+      case "lowerRoman":
+        return NumberFormat.LOWER_ROMAN;
+      case "upperLetter":
+        return NumberFormat.UPPER_LETTER;
+      case "lowerLetter":
+        return NumberFormat.LOWER_LETTER;
+      default:
+        return NumberFormat.DECIMAL;
+    }
+  }
+
+  // 格式化日期
+  private formatDate(date: Date, format: string): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+
+    return format
+      .replace('yyyy', year.toString())
+      .replace('MM', month)
+      .replace('dd', day)
+      .replace('yy', year.toString().slice(-2));
   }
 }

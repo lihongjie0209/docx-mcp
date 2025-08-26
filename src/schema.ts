@@ -63,6 +63,24 @@ export const DocxSchema = {
         footerMargin: { type: "number", default: 720 }
       }
     },
+    headers: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        default: { $ref: "#/$defs/HeaderFooterContent" },
+        first: { $ref: "#/$defs/HeaderFooterContent" },
+        even: { $ref: "#/$defs/HeaderFooterContent" }
+      }
+    },
+    footers: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        default: { $ref: "#/$defs/HeaderFooterContent" },
+        first: { $ref: "#/$defs/HeaderFooterContent" },
+        even: { $ref: "#/$defs/HeaderFooterContent" }
+      }
+    },
     content: {
       type: "array",
       items: { $ref: "#/$defs/Block" }
@@ -433,6 +451,107 @@ export const DocxSchema = {
           }
         }
       }
+    },
+    HeaderFooterContent: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        alignment: { enum: ["left", "center", "right"], default: "left" },
+        children: { 
+          type: "array",
+          items: { $ref: "#/$defs/HeaderFooterElement" }
+        }
+      }
+    },
+    HeaderFooterElement: {
+      type: "object",
+      oneOf: [
+        { $ref: "#/$defs/HeaderFooterText" },
+        { $ref: "#/$defs/PageNumber" },
+        { $ref: "#/$defs/HeaderFooterImage" },
+        { $ref: "#/$defs/CurrentDate" },
+        { $ref: "#/$defs/DocumentTitle" }
+      ]
+    },
+    HeaderFooterText: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "text"],
+      properties: {
+        type: { const: "text" },
+        text: { type: "string" },
+        bold: { type: "boolean", default: false },
+        italics: { type: "boolean", default: false },
+        underline: { type: "boolean", default: false },
+        size: { type: "number", default: 12 },
+        color: { type: "string", default: "#000000" },
+        fontFamily: { type: "string", default: "Arial" }
+      }
+    },
+    PageNumber: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type"],
+      properties: {
+        type: { const: "pageNumber" },
+        format: { 
+          enum: ["decimal", "upperRoman", "lowerRoman", "upperLetter", "lowerLetter"],
+          default: "decimal"
+        },
+        start: { type: "number", default: 1 },
+        bold: { type: "boolean", default: false },
+        italics: { type: "boolean", default: false },
+        size: { type: "number", default: 12 },
+        color: { type: "string", default: "#000000" }
+      }
+    },
+    HeaderFooterImage: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type"],
+      oneOf: [
+        { required: ["data", "format"] },
+        { required: ["path"] },
+        { required: ["url"] }
+      ],
+      properties: {
+        type: { const: "image" },
+        data: { type: "string", description: "base64-encoded image data" },
+        format: { enum: ["png", "jpeg", "jpg"] },
+        path: { type: "string", description: "local file path to image" },
+        url: { type: "string", description: "URL to download image from" },
+        width: { type: "number" },
+        height: { type: "number" }
+      }
+    },
+    CurrentDate: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type"],
+      properties: {
+        type: { const: "currentDate" },
+        format: { 
+          type: "string",
+          default: "MM/dd/yyyy",
+          description: "Date format string"
+        },
+        bold: { type: "boolean", default: false },
+        italics: { type: "boolean", default: false },
+        size: { type: "number", default: 12 },
+        color: { type: "string", default: "#000000" }
+      }
+    },
+    DocumentTitle: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type"],
+      properties: {
+        type: { const: "documentTitle" },
+        bold: { type: "boolean", default: false },
+        italics: { type: "boolean", default: false },
+        size: { type: "number", default: 12 },
+        color: { type: "string", default: "#000000" }
+      }
     }
   }
 } as const;
@@ -468,5 +587,75 @@ export type DocxJSON = {
     headerMargin?: number;
     footerMargin?: number;
   };
+  headers?: {
+    default?: HeaderFooterContent;
+    first?: HeaderFooterContent;
+    even?: HeaderFooterContent;
+  };
+  footers?: {
+    default?: HeaderFooterContent;
+    first?: HeaderFooterContent;
+    even?: HeaderFooterContent;
+  };
   content: any[];
+};
+
+export type HeaderFooterContent = {
+  alignment?: "left" | "center" | "right";
+  children?: HeaderFooterElement[];
+};
+
+export type HeaderFooterElement = 
+  | HeaderFooterText
+  | PageNumber
+  | HeaderFooterImage
+  | CurrentDate
+  | DocumentTitle;
+
+export type HeaderFooterText = {
+  type: "text";
+  text: string;
+  bold?: boolean;
+  italics?: boolean;
+  underline?: boolean;
+  size?: number;
+  color?: string;
+  fontFamily?: string;
+};
+
+export type PageNumber = {
+  type: "pageNumber";
+  format?: "decimal" | "upperRoman" | "lowerRoman" | "upperLetter" | "lowerLetter";
+  start?: number;
+  bold?: boolean;
+  italics?: boolean;
+  size?: number;
+  color?: string;
+};
+
+export type HeaderFooterImage = {
+  type: "image";
+  width?: number;
+  height?: number;
+} & (
+  | { data: string; format: "png" | "jpeg" | "jpg" }
+  | { path: string }
+  | { url: string }
+);
+
+export type CurrentDate = {
+  type: "currentDate";
+  format?: string;
+  bold?: boolean;
+  italics?: boolean;
+  size?: number;
+  color?: string;
+};
+
+export type DocumentTitle = {
+  type: "documentTitle";
+  bold?: boolean;
+  italics?: boolean;
+  size?: number;
+  color?: string;
 };
