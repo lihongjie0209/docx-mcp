@@ -47,7 +47,10 @@ export const DocxSchema = {
         { $ref: "#/$defs/Paragraph" },
         { $ref: "#/$defs/Table" },
         { $ref: "#/$defs/Image" },
-        { $ref: "#/$defs/Heading" }
+        { $ref: "#/$defs/Heading" },
+        { $ref: "#/$defs/CodeBlock" },
+        { $ref: "#/$defs/List" },
+        { $ref: "#/$defs/PageBreak" }
       ]
     },
     Heading: {
@@ -107,7 +110,14 @@ export const DocxSchema = {
         underline: { type: "boolean" },
         strike: { type: "boolean" },
         color: { type: "string" },
-        size: { type: "number" }
+        size: { type: "number" },
+        fontFamily: { type: "string" },
+        superScript: { type: "boolean" },
+        subScript: { type: "boolean" },
+        highlight: { type: "string" },
+        smallCaps: { type: "boolean" },
+        allCaps: { type: "boolean" },
+        spacing: { type: "number" }
       }
     },
     Hyperlink: {
@@ -176,6 +186,58 @@ export const DocxSchema = {
         { required: ["path"] },
         { required: ["url"] }
       ]
+    },
+    CodeBlock: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "code"],
+      properties: {
+        type: { const: "codeBlock" },
+        code: { type: "string" },
+        language: { type: "string" },
+        showLineNumbers: { type: "boolean", default: false },
+        theme: { enum: ["default", "dark", "light", "github"], default: "default" },
+        fontSize: { type: "number", default: 10 },
+        fontFamily: { type: "string", default: "Consolas" },
+        title: { type: "string" },
+        caption: { type: "string" }
+      }
+    },
+    List: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "items"],
+      properties: {
+        type: { const: "list" },
+        ordered: { type: "boolean", default: false },
+        level: { type: "integer", minimum: 0, default: 0 },
+        items: {
+          type: "array",
+          items: { $ref: "#/$defs/ListItem" }
+        },
+        numberFormat: { enum: ["decimal", "upperRoman", "lowerRoman", "upperLetter", "lowerLetter"], default: "decimal" },
+        bulletStyle: { enum: ["bullet", "circle", "square", "dash", "arrow"], default: "bullet" },
+        startNumber: { type: "integer", minimum: 1, default: 1 }
+      }
+    },
+    ListItem: {
+      type: "object",
+      additionalProperties: false,
+      required: ["children"],
+      properties: {
+        children: { $ref: "#/$defs/Inlines" },
+        level: { type: "integer", minimum: 0, default: 0 },
+        subList: { $ref: "#/$defs/List" }
+      }
+    },
+    PageBreak: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type"],
+      properties: {
+        type: { const: "pageBreak" },
+        breakType: { enum: ["page", "section", "column"], default: "page" }
+      }
     }
   }
 } as const;

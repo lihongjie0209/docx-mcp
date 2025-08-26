@@ -40,9 +40,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.2.0",
+    "@types/highlight.js": "^10.1.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "docx": "^8.5.0",
+    "highlight.js": "^11.11.1",
     "jszip": "^3.10.1",
     "nanoid": "^5.0.7",
     "sharp": "^0.34.3",

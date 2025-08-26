@@ -1,10 +1,34 @@
 import { AlignmentType, Document, HeadingLevel, ImageRun, Paragraph, Table, TableCell, TableRow, TextRun, Packer } from "docx";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
-import { DocxSchema, DocxJSON } from "./schema.js";
+import { DocxSchema } from "./schema.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import hljs from "highlight.js";
+
+// 定义 DocxJSON 类型
+export type DocxJSON = {
+  meta?: {
+    title?: string;
+    subject?: string;
+    creator?: string;
+    description?: string;
+    keywords?: string;
+    lastModifiedBy?: string;
+    category?: string;
+    company?: string;
+    manager?: string;
+    revision?: string;
+    createdAt?: string;
+    modifiedAt?: string;
+  };
+  styles?: {
+    defaultFont?: string;
+    defaultFontSize?: number;
+  };
+  content: any[];
+};
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
@@ -215,6 +239,12 @@ export class DocRegistry {
         return [this.tableFrom(block)];
       case "image":
         return [this.imageParagraph(block)];
+      case "codeBlock":
+        return [this.codeBlockParagraph(block)];
+      case "list":
+        return this.listToParagraphs(block);
+      case "pageBreak":
+        return [this.pageBreakParagraph(block)];
       default:
         throw new Error(`Unknown block type: ${block.type}`);
     }
@@ -229,6 +259,12 @@ export class DocRegistry {
         return [this.tableFrom(block)];
       case "image":
         return [await this.imageParagraphAsync(block)];
+      case "codeBlock":
+        return [this.codeBlockParagraph(block)];
+      case "list":
+        return this.listToParagraphs(block);
+      case "pageBreak":
+        return [this.pageBreakParagraph(block)];
       default:
         throw new Error(`Unknown block type: ${block.type}`);
     }
@@ -264,6 +300,13 @@ export class DocRegistry {
           strike: n.strike,
           color: inHyperlink ? (n.color ?? "0000EE") : n.color,
           size: n.size ? Math.round(n.size) : undefined,
+          font: n.fontFamily,
+          superScript: n.superScript,
+          subScript: n.subScript,
+          smallCaps: n.smallCaps,
+          allCaps: n.allCaps,
+          characterSpacing: n.spacing,
+          highlight: n.highlight
         }));
       } else if (n.type === "hyperlink") {
         runs.push(...this.inlineRuns(n.children || [], true));
@@ -388,5 +431,138 @@ export class DocRegistry {
     return await sharp(Buffer.from(svgPlaceholder))
       .png()
       .toBuffer();
+  }
+
+  // 新增方法：代码块支持
+  private codeBlockParagraph(block: any): Paragraph {
+    const { code, language, theme = "default", fontSize = 10, fontFamily = "Consolas" } = block;
+    
+    // 使用 highlight.js 进行语法高亮
+    let highlightedCode = code;
+    if (language && hljs.getLanguage(language)) {
+      try {
+        const result = hljs.highlight(code, { language });
+        highlightedCode = result.value;
+      } catch (e) {
+        // 如果高亮失败，使用原始代码
+        console.warn(`Failed to highlight code with language ${language}:`, e);
+      }
+    }
+
+    // 将高亮的HTML转换为简单的文本格式
+    // 这里简化处理，实际应该解析HTML并应用格式
+    const plainCode = highlightedCode.replace(/<[^>]*>/g, '');
+    
+    const runs = plainCode.split('\n').map((line: string, index: number) => {
+      const runs = [];
+      if (block.showLineNumbers) {
+        runs.push(new TextRun({
+          text: `${(index + 1).toString().padStart(3, ' ')}  `,
+          font: fontFamily,
+          size: fontSize * 2,
+          color: "666666"
+        }));
+      }
+      runs.push(new TextRun({
+        text: line,
+        font: fontFamily,
+        size: fontSize * 2,
+        color: "333333"
+      }));
+      if (index < plainCode.split('\n').length - 1) {
+        runs.push(new TextRun({ break: 1 }));
+      }
+      return runs;
+    }).flat();
+
+    return new Paragraph({
+      children: runs,
+      spacing: { before: 200, after: 200 },
+      shading: {
+        type: "solid",
+        color: theme === "dark" ? "2d3748" : "f7fafc",
+        fill: theme === "dark" ? "2d3748" : "f7fafc"
+      }
+    });
+  }
+
+  // 新增方法：列表支持
+  private listToParagraphs(block: any): Paragraph[] {
+    const { items, ordered = false, numberFormat = "decimal", bulletStyle = "bullet" } = block;
+    
+    return items.map((item: any, index: number) => {
+      const runs = this.inlineRuns(item.children || []);
+      
+      // 添加列表标记
+      let marker = "";
+      if (ordered) {
+        switch (numberFormat) {
+          case "upperRoman":
+            marker = this.toRoman(index + 1).toUpperCase() + ". ";
+            break;
+          case "lowerRoman":
+            marker = this.toRoman(index + 1).toLowerCase() + ". ";
+            break;
+          case "upperLetter":
+            marker = String.fromCharCode(65 + (index % 26)) + ". ";
+            break;
+          case "lowerLetter":
+            marker = String.fromCharCode(97 + (index % 26)) + ". ";
+            break;
+          default:
+            marker = `${index + 1}. `;
+        }
+      } else {
+        switch (bulletStyle) {
+          case "circle":
+            marker = "○ ";
+            break;
+          case "square":
+            marker = "■ ";
+            break;
+          case "dash":
+            marker = "– ";
+            break;
+          case "arrow":
+            marker = "→ ";
+            break;
+          default:
+            marker = "• ";
+        }
+      }
+
+      const markerRun = new TextRun({ text: marker });
+      const finalRuns = [markerRun, ...runs];
+
+      return new Paragraph({
+        children: finalRuns,
+        indent: { left: 720 * (item.level || 0) } // 0.5 inch per level
+      });
+    });
+  }
+
+  // 新增方法：分页符支持
+  private pageBreakParagraph(block: any): Paragraph {
+    const { breakType = "page" } = block;
+    
+    return new Paragraph({
+      children: [new TextRun({ break: breakType === "page" ? 1 : 1 })],
+      pageBreakBefore: breakType === "page"
+    });
+  }
+
+  // 辅助方法：转换为罗马数字
+  private toRoman(num: number): string {
+    const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+    const literals = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+    
+    let roman = '';
+    for (let i = 0; i < values.length; i++) {
+      while (num >= values[i]) {
+        roman += literals[i];
+        num -= values[i];
+      }
+    }
+    return roman;
   }
 }

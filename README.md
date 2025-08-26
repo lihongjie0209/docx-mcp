@@ -3,17 +3,40 @@
 A Node.js MCP server that lets clients create, query, edit, and save DOCX documents using a JSON schema, powered by the `docx` library.
 
 ## Features
-- JSON Schema describing a simplified DOCX structure
-- Create/Open documents -> returns an in-memory id
-- Query metadata and top-level object info
-- Edit metadata and content blocks (insert/replace/remove)
-- Save by id to disk
+- **Complete DOCX operations**: Create, edit, and save Word documents via Model Context Protocol (MCP)
+- **JSON Schema validation**: Structured document definition with comprehensive validation
+- **Rich content blocks**:
+  - **Text & Headings**: 6 heading levels with advanced formatting
+  - **Lists**: Ordered/unordered lists with multiple numbering styles and nesting
+  - **Code Blocks**: Syntax highlighting for 180+ languages with themes and line numbers
+  - **Tables**: Full table support with styling and cell formatting
+  - **Images**: URL downloads with fallback, local files, and base64 embedding
+  - **Page Control**: Page breaks and section breaks
+- **Advanced text formatting**:
+  - Basic: Bold, italic, underline, strikethrough, colors
+  - Enhanced: Superscript, subscript, font families, highlights, small caps
+  - Spacing: Character spacing, paragraph alignment, indentation
+- **Document management**: In-memory registry with unique IDs
+- **Metadata support**: Complete document properties and custom metadata
+- **File operations**: Open existing DOCX files and save to disk
+- **Error handling**: Graceful fallbacks and comprehensive validation
 
 ## JSON Schema
 See `src/schema.ts` for the full schema. Key concepts:
-- meta: document metadata (title, subject, creator, ...)
-- content: array of blocks: heading, paragraph, table, image
-- Each paragraph/heading uses inline runs (text, hyperlink)
+- **meta**: Document metadata (title, subject, creator, etc.)
+- **content**: Array of blocks: heading, paragraph, table, image, codeBlock, list, pageBreak
+- **Enhanced blocks**:
+  - **CodeBlock**: `{ type: "codeBlock", language: "javascript", code: "...", showLineNumbers: true }`
+  - **List**: `{ type: "list", ordered: true, items: [...] }` with nesting support
+  - **Enhanced TextRun**: Supports fontFamily, superScript, subScript, highlight, etc.
+- Each paragraph/heading uses inline runs (text, hyperlink) with rich formatting options
+
+## New in v0.2.0
+- ✅ **Code Blocks**: Syntax highlighting for 180+ programming languages
+- ✅ **Lists**: Ordered and unordered lists with multiple styles and nesting
+- ✅ **Page Breaks**: Control document pagination
+- ✅ **Enhanced Text**: Superscript, subscript, font families, highlights
+- ✅ **Improved Schema**: More comprehensive validation and type safety
 
 ## Run locally
 1. Install deps
@@ -51,13 +74,33 @@ npm start
 ## Example JSON
 ```json
 {
-  "meta": { "title": "Demo", "creator": "me" },
+  "meta": { "title": "Demo", "creator": "DOCX MCP v0.2.0" },
   "content": [
     { "type": "heading", "level": 1, "children": [ { "type": "text", "text": "Title" } ] },
-    { "type": "paragraph", "children": [ { "type": "text", "text": "Hello ", "bold": true }, { "type": "text", "text": "world" } ] },
+    { "type": "paragraph", "children": [ 
+      { "type": "text", "text": "Hello ", "bold": true }, 
+      { "type": "text", "text": "world", "color": "FF0000" } 
+    ]},
+    { 
+      "type": "codeBlock", 
+      "language": "javascript", 
+      "showLineNumbers": true,
+      "code": "console.log('Hello, World!');" 
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "items": [
+        { "children": [{ "type": "text", "text": "First item" }] },
+        { "children": [{ "type": "text", "text": "Second item" }] }
+      ]
+    },
     { "type": "image", "url": "https://picsum.photos/300/200", "width": 300, "height": 200 },
-    { "type": "image", "data": "base64data...", "format": "png", "width": 150, "height": 100 },
-    { "type": "table", "rows": [ { "cells": [ { "children": [ { "type": "paragraph", "children": [ { "type": "text", "text": "A" } ] } ] }, { "children": [ { "type": "paragraph", "children": [ { "type": "text", "text": "B" } ] } ] } ] } ] }
+    { "type": "pageBreak" },
+    { "type": "table", "rows": [ { "cells": [ 
+      { "children": [ { "type": "paragraph", "children": [ { "type": "text", "text": "A" } ] } ] }, 
+      { "children": [ { "type": "paragraph", "children": [ { "type": "text", "text": "B" } ] } ] } 
+    ] } ] }
   ]
 }
 ```
