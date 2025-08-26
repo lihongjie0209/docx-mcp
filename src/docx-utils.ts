@@ -1,4 +1,24 @@
-import { AlignmentType, Document, HeadingLevel, ImageRun, Paragraph, Table, TableCell, TableRow, TextRun, Packer } from "docx";
+import { 
+  AlignmentType, 
+  Document, 
+  HeadingLevel, 
+  ImageRun, 
+  Paragraph, 
+  Table, 
+  TableCell, 
+  TableRow, 
+  TextRun, 
+  Packer,
+  PageSize,
+  PageOrientation,
+  PageMargin,
+  SectionType,
+  BorderStyle,
+  VerticalAlign,
+  TableLayoutType,
+  WidthType,
+  ShadingType
+} from "docx";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { DocxSchema } from "./schema.js";
@@ -26,6 +46,18 @@ export type DocxJSON = {
   styles?: {
     defaultFont?: string;
     defaultFontSize?: number;
+  };
+  pageSettings?: {
+    pageSize?: "A4" | "A3" | "A5" | "Letter" | "Legal" | "Tabloid" | "Executive";
+    orientation?: "portrait" | "landscape";
+    margins?: {
+      top?: number;
+      bottom?: number;
+      left?: number;
+      right?: number;
+    };
+    headerMargin?: number;
+    footerMargin?: number;
   };
   content: any[];
 };
@@ -198,9 +230,10 @@ export class DocRegistry {
 
   private jsonToDoc(json: DocxJSON): Document {
     const children = json.content.map(block => this.blockToDoc(block)).flat();
+    const sectionProperties = this.createSectionProperties(json.pageSettings);
 
     const doc = new Document({
-      sections: [{ properties: {}, children }],
+      sections: [{ properties: sectionProperties, children }],
       creator: json.meta?.creator,
       description: json.meta?.description,
       title: json.meta?.title,
@@ -216,9 +249,10 @@ export class DocRegistry {
     const children = await Promise.all(
       json.content.map(block => this.blockToDocAsync(block))
     );
+    const sectionProperties = this.createSectionProperties(json.pageSettings);
 
     const doc = new Document({
-      sections: [{ properties: {}, children: children.flat() }],
+      sections: [{ properties: sectionProperties, children: children.flat() }],
       creator: json.meta?.creator,
       description: json.meta?.description,
       title: json.meta?.title,
@@ -245,6 +279,14 @@ export class DocRegistry {
         return this.listToParagraphs(block);
       case "pageBreak":
         return [this.pageBreakParagraph(block)];
+      case "horizontalRule":
+        return [this.horizontalRuleParagraph(block)];
+      case "blockquote":
+        return this.blockquoteParagraphs(block);
+      case "infoBox":
+        return this.infoBoxParagraphs(block);
+      case "textBox":
+        return this.textBoxParagraphs(block);
       default:
         throw new Error(`Unknown block type: ${block.type}`);
     }
@@ -265,6 +307,14 @@ export class DocRegistry {
         return this.listToParagraphs(block);
       case "pageBreak":
         return [this.pageBreakParagraph(block)];
+      case "horizontalRule":
+        return [this.horizontalRuleParagraph(block)];
+      case "blockquote":
+        return this.blockquoteParagraphs(block);
+      case "infoBox":
+        return this.infoBoxParagraphs(block);
+      case "textBox":
+        return this.textBoxParagraphs(block);
       default:
         throw new Error(`Unknown block type: ${block.type}`);
     }
@@ -327,12 +377,116 @@ export class DocRegistry {
   }
 
   private tableFrom(t: any): Table {
-    const rows = (t.rows || []).map((row: any) => new TableRow({
-      children: (row.cells || []).map((cell: any) => new TableCell({
-        children: (cell.children || []).map((p: any) => this.paragraphFrom(p))
-      }))
+    const rows = (t.rows || []).map((row: any, rowIndex: number) => new TableRow({
+      children: (row.cells || []).map((cell: any, cellIndex: number) => {
+        const cellOptions: any = {
+          children: (cell.children || []).map((p: any) => this.paragraphFrom(p))
+        };
+        
+        // 单元格跨越
+        if (cell.colSpan && cell.colSpan > 1) {
+          cellOptions.columnSpan = cell.colSpan;
+        }
+        if (cell.rowSpan && cell.rowSpan > 1) {
+          cellOptions.rowSpan = cell.rowSpan;
+        }
+        
+        // 背景色
+        if (cell.backgroundColor) {
+          cellOptions.shading = {
+            type: ShadingType.SOLID,
+            fill: cell.backgroundColor.replace('#', '')
+          };
+        }
+        
+        // 垂直对齐
+        if (cell.verticalAlign) {
+          const alignMap = {
+            top: VerticalAlign.TOP,
+            center: VerticalAlign.CENTER,
+            bottom: VerticalAlign.BOTTOM
+          };
+          cellOptions.verticalAlign = alignMap[cell.verticalAlign as keyof typeof alignMap] || VerticalAlign.TOP;
+        }
+        
+        // 单元格边距
+        if (cell.margins) {
+          cellOptions.margins = {
+            top: cell.margins.top || 0,
+            bottom: cell.margins.bottom || 0,
+            left: cell.margins.left || 108,
+            right: cell.margins.right || 108
+          };
+        }
+        
+        // 边框设置
+        if (cell.borders) {
+          cellOptions.borders = {};
+          if (cell.borders.top !== undefined) {
+            cellOptions.borders.top = cell.borders.top ? { style: BorderStyle.SINGLE, size: 1, color: "000000" } : { style: BorderStyle.NONE };
+          }
+          if (cell.borders.bottom !== undefined) {
+            cellOptions.borders.bottom = cell.borders.bottom ? { style: BorderStyle.SINGLE, size: 1, color: "000000" } : { style: BorderStyle.NONE };
+          }
+          if (cell.borders.left !== undefined) {
+            cellOptions.borders.left = cell.borders.left ? { style: BorderStyle.SINGLE, size: 1, color: "000000" } : { style: BorderStyle.NONE };
+          }
+          if (cell.borders.right !== undefined) {
+            cellOptions.borders.right = cell.borders.right ? { style: BorderStyle.SINGLE, size: 1, color: "000000" } : { style: BorderStyle.NONE };
+          }
+        }
+        
+        return new TableCell(cellOptions);
+      }),
+      // 行属性
+      tableHeader: row.isHeader,
+      height: row.height ? { value: row.height, rule: "atLeast" } : undefined,
+      cantSplit: row.cantSplit
     }));
-    return new Table({ rows, width: { size: Math.round(t.width || 100), type: "pct" as any } });
+    
+    const tableOptions: any = {
+      rows,
+      width: { size: Math.round(t.width || 100), type: WidthType.PERCENTAGE }
+    };
+    
+    // 表格对齐
+    if (t.alignment) {
+      const alignMap = {
+        left: AlignmentType.LEFT,
+        center: AlignmentType.CENTER,
+        right: AlignmentType.RIGHT
+      };
+      tableOptions.alignment = alignMap[t.alignment as keyof typeof alignMap] || AlignmentType.LEFT;
+    }
+    
+    // 表格边框
+    if (t.borders !== false) {
+      const borderStyle = t.borderStyle || "single";
+      const borderColor = (t.borderColor || "#000000").replace('#', '');
+      const borderSize = t.borderSize || 1;
+      
+      const borderStyleMap = {
+        single: BorderStyle.SINGLE,
+        double: BorderStyle.DOUBLE,
+        thick: BorderStyle.THICK,
+        thin: BorderStyle.SINGLE,  // 使用SINGLE代替THIN
+        dotted: BorderStyle.DOTTED,
+        dashed: BorderStyle.DASHED
+      };
+      
+      const docxBorderStyle = borderStyleMap[borderStyle as keyof typeof borderStyleMap] || BorderStyle.SINGLE;
+      
+      tableOptions.borders = {
+        top: { style: docxBorderStyle, size: borderSize, color: borderColor },
+        bottom: { style: docxBorderStyle, size: borderSize, color: borderColor },
+        left: { style: docxBorderStyle, size: borderSize, color: borderColor },
+        right: { style: docxBorderStyle, size: borderSize, color: borderColor },
+        insideHorizontal: { style: docxBorderStyle, size: borderSize, color: borderColor },
+        insideVertical: { style: docxBorderStyle, size: borderSize, color: borderColor }
+      };
+    }
+    
+    return new Table(tableOptions);
   }
 
   private imageParagraph(img: any): Paragraph {
@@ -564,5 +718,155 @@ export class DocRegistry {
       }
     }
     return roman;
+  }
+
+  // 辅助方法：处理页面设置
+  private createSectionProperties(pageSettings?: DocxJSON['pageSettings']) {
+    const properties: any = {};
+
+    if (pageSettings) {
+      // 页面大小和方向
+      if (pageSettings.pageSize || pageSettings.orientation) {
+        properties.page = {};
+        
+        // 设置页面尺寸（使用具体数值，因为PageSize枚举可能不完整）
+        if (pageSettings.pageSize) {
+          const sizeMap = {
+            A4: { width: 11906, height: 16838 },     // 210 x 297 mm
+            A3: { width: 16838, height: 23811 },     // 297 x 420 mm  
+            A5: { width: 8391, height: 11906 },      // 148 x 210 mm
+            Letter: { width: 12240, height: 15840 }, // 8.5 x 11 inch
+            Legal: { width: 12240, height: 20160 },  // 8.5 x 14 inch
+            Tabloid: { width: 15840, height: 24480 }, // 11 x 17 inch
+            Executive: { width: 10440, height: 15120 } // 7.25 x 10.5 inch
+          };
+          
+          const size = sizeMap[pageSettings.pageSize];
+          if (size) {
+            properties.page.size = {
+              width: size.width,
+              height: size.height
+            };
+          }
+        }
+
+        // 页面方向
+        if (pageSettings.orientation) {
+          properties.page.orientation = pageSettings.orientation === "landscape" ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT;
+        }
+      }
+
+      // 页边距
+      if (pageSettings.margins) {
+        properties.margin = {
+          top: pageSettings.margins.top || 1440,
+          bottom: pageSettings.margins.bottom || 1440,
+          left: pageSettings.margins.left || 1440,
+          right: pageSettings.margins.right || 1440
+        };
+      }
+
+      // 页眉页脚边距
+      if (pageSettings.headerMargin !== undefined || pageSettings.footerMargin !== undefined) {
+        properties.headers = properties.headers || {};
+        properties.footers = properties.footers || {};
+        if (pageSettings.headerMargin !== undefined) {
+          properties.titlePage = true;
+        }
+      }
+    }
+
+    return properties;
+  }
+
+  // 处理水平分隔线
+  private horizontalRuleParagraph(rule: any): Paragraph {
+    const style = rule.style || "single";
+    const color = rule.color || "#000000";
+    const alignment = rule.alignment || "center";
+    
+    return new Paragraph({
+      children: [new TextRun({ text: "───────────────────────────────────────" })],
+      alignment: alignment === "center" ? AlignmentType.CENTER : 
+                alignment === "right" ? AlignmentType.RIGHT : AlignmentType.LEFT,
+      spacing: { before: 240, after: 240 }
+    });
+  }
+
+  // 处理引用块  
+  private blockquoteParagraphs(blockquote: any): (Paragraph | Table)[] {
+    const children = blockquote.children || [];
+    const leftIndent = blockquote.leftIndent || 720;
+    
+    const result: (Paragraph | Table)[] = [];
+    
+    children.forEach((block: any) => {
+      // 为每个子块添加引用样式
+      const styledBlock = { ...block };
+      if (block.type === 'paragraph' || block.type === 'heading') {
+        styledBlock.indent = { left: leftIndent };
+        styledBlock.border = {
+          left: {
+            color: blockquote.borderColor || "#cccccc",
+            size: 6,
+            style: "single"
+          }
+        };
+      }
+      
+      const blockElements = this.blockToDoc(styledBlock);
+      result.push(...blockElements);
+    });
+    
+    return result;
+  }
+
+  // 处理信息框
+  private infoBoxParagraphs(infoBox: any): (Paragraph | Table)[] {
+    const boxType = infoBox.boxType || "info";
+    const title = infoBox.title;
+    const children = infoBox.children || [];
+    
+    const result: (Paragraph | Table)[] = [];
+    
+    // 添加标题段落
+    if (title) {
+      result.push(new Paragraph({
+        children: [new TextRun({ text: title, bold: true })],
+        spacing: { before: 240, after: 120 }
+      }));
+    }
+    
+    // 添加内容段落
+    children.forEach((block: any) => {
+      const blockElements = this.blockToDoc(block);
+      result.push(...blockElements);
+    });
+    
+    return result;
+  }
+
+  // 处理文本框
+  private textBoxParagraphs(textBox: any): (Paragraph | Table)[] {
+    const children = textBox.children || [];
+    const result: (Paragraph | Table)[] = [];
+    
+    children.forEach((block: any) => {
+      // 为文本框内容添加边框样式
+      const styledBlock = { ...block };
+      if (block.type === 'paragraph' || block.type === 'heading') {
+        styledBlock.border = {
+          top: { color: "#000000", size: 6, style: "single" },
+          bottom: { color: "#000000", size: 6, style: "single" },
+          left: { color: "#000000", size: 6, style: "single" },
+          right: { color: "#000000", size: 6, style: "single" }
+        };
+      }
+      
+      const blockElements = this.blockToDoc(styledBlock);
+      result.push(...blockElements);
+    });
+    
+    return result;
   }
 }

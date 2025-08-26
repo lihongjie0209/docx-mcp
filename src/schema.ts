@@ -35,6 +35,34 @@ export const DocxSchema = {
         defaultFontSize: { type: "number" }
       }
     },
+    pageSettings: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        pageSize: { 
+          type: "string",
+          enum: ["A4", "A3", "A5", "Letter", "Legal", "Tabloid", "Executive"],
+          default: "A4"
+        },
+        orientation: {
+          type: "string",
+          enum: ["portrait", "landscape"],
+          default: "portrait"
+        },
+        margins: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            top: { type: "number", default: 1440 },    // in twips (1 inch = 1440 twips)
+            bottom: { type: "number", default: 1440 },
+            left: { type: "number", default: 1440 },
+            right: { type: "number", default: 1440 }
+          }
+        },
+        headerMargin: { type: "number", default: 720 },  // 0.5 inch
+        footerMargin: { type: "number", default: 720 }
+      }
+    },
     content: {
       type: "array",
       items: { $ref: "#/$defs/Block" }
@@ -50,7 +78,11 @@ export const DocxSchema = {
         { $ref: "#/$defs/Heading" },
         { $ref: "#/$defs/CodeBlock" },
         { $ref: "#/$defs/List" },
-        { $ref: "#/$defs/PageBreak" }
+        { $ref: "#/$defs/PageBreak" },
+        { $ref: "#/$defs/HorizontalRule" },
+        { $ref: "#/$defs/Blockquote" },
+        { $ref: "#/$defs/InfoBox" },
+        { $ref: "#/$defs/TextBox" }
       ]
     },
     Heading: {
@@ -141,7 +173,24 @@ export const DocxSchema = {
           items: { $ref: "#/$defs/TableRow" }
         },
         width: { type: "number" },
-        borders: { type: "boolean" }
+        borders: { type: "boolean" },
+        borderStyle: {
+          type: "string",
+          enum: ["single", "double", "thick", "thin", "dotted", "dashed"],
+          default: "single"
+        },
+        borderColor: { type: "string", default: "#000000" },
+        borderSize: { type: "number", default: 1 },
+        style: {
+          type: "string",
+          enum: ["none", "table-grid", "table-list", "table-colorful"],
+          default: "none"
+        },
+        alignment: {
+          type: "string",
+          enum: ["left", "center", "right"],
+          default: "left"
+        }
       }
     },
     TableRow: {
@@ -152,7 +201,10 @@ export const DocxSchema = {
         cells: {
           type: "array",
           items: { $ref: "#/$defs/TableCell" }
-        }
+        },
+        isHeader: { type: "boolean", default: false },
+        height: { type: "number" },
+        cantSplit: { type: "boolean", default: false }
       }
     },
     TableCell: {
@@ -165,6 +217,32 @@ export const DocxSchema = {
         children: {
           type: "array",
           items: { $ref: "#/$defs/Paragraph" }
+        },
+        backgroundColor: { type: "string" },
+        verticalAlign: {
+          type: "string",
+          enum: ["top", "center", "bottom"],
+          default: "top"
+        },
+        margins: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            top: { type: "number", default: 0 },
+            bottom: { type: "number", default: 0 },
+            left: { type: "number", default: 108 },  // 0.075 inch
+            right: { type: "number", default: 108 }
+          }
+        },
+        borders: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            top: { type: "boolean", default: true },
+            bottom: { type: "boolean", default: true },
+            left: { type: "boolean", default: true },
+            right: { type: "boolean", default: true }
+          }
         }
       }
     },
@@ -238,6 +316,123 @@ export const DocxSchema = {
         type: { const: "pageBreak" },
         breakType: { enum: ["page", "section", "column"], default: "page" }
       }
+    },
+    HorizontalRule: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type"],
+      properties: {
+        type: { const: "horizontalRule" },
+        style: {
+          type: "string",
+          enum: ["single", "double", "thick", "thin", "dotted", "dashed"],
+          default: "single"
+        },
+        color: { type: "string", default: "#000000" },
+        size: { type: "number", default: 1 },
+        alignment: {
+          type: "string",
+          enum: ["left", "center", "right"],
+          default: "center"
+        },
+        width: { type: "number" }  // percentage width, 0-100
+      }
+    },
+    Blockquote: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "children"],
+      properties: {
+        type: { const: "blockquote" },
+        children: {
+          type: "array",
+          items: { $ref: "#/$defs/Block" }
+        },
+        style: {
+          type: "string",
+          enum: ["default", "emphasized", "minimal"],
+          default: "default"
+        },
+        borderColor: { type: "string", default: "#cccccc" },
+        backgroundColor: { type: "string" },
+        leftIndent: { type: "number", default: 720 }  // 0.5 inch
+      }
+    },
+    InfoBox: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "boxType", "children"],
+      properties: {
+        type: { const: "infoBox" },
+        boxType: {
+          type: "string",
+          enum: ["info", "warning", "error", "success", "note"],
+          default: "info"
+        },
+        title: { type: "string" },
+        children: {
+          type: "array",
+          items: { $ref: "#/$defs/Block" }
+        },
+        icon: { type: "boolean", default: true },
+        customColors: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            backgroundColor: { type: "string" },
+            borderColor: { type: "string" },
+            textColor: { type: "string" }
+          }
+        }
+      }
+    },
+    TextBox: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "children"],
+      properties: {
+        type: { const: "textBox" },
+        children: {
+          type: "array",
+          items: { $ref: "#/$defs/Block" }
+        },
+        width: { type: "number" },
+        height: { type: "number" },
+        position: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            x: { type: "number" },
+            y: { type: "number" },
+            anchor: {
+              type: "string",
+              enum: ["page", "margin", "paragraph"],
+              default: "paragraph"
+            }
+          }
+        },
+        borders: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            style: {
+              type: "string",
+              enum: ["single", "double", "thick", "thin", "dotted", "dashed", "none"],
+              default: "single"
+            },
+            color: { type: "string", default: "#000000" },
+            size: { type: "number", default: 1 }
+          }
+        },
+        fill: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            color: { type: "string" },
+            transparency: { type: "number", minimum: 0, maximum: 100, default: 0 }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -260,6 +455,18 @@ export type DocxJSON = {
   styles?: {
     defaultFont?: string;
     defaultFontSize?: number;
+  };
+  pageSettings?: {
+    pageSize?: "A4" | "A3" | "A5" | "Letter" | "Legal" | "Tabloid" | "Executive";
+    orientation?: "portrait" | "landscape";
+    margins?: {
+      top?: number;
+      bottom?: number;
+      left?: number;
+      right?: number;
+    };
+    headerMargin?: number;
+    footerMargin?: number;
   };
   content: any[];
 };

@@ -1,6 +1,6 @@
 {
   "name": "@docx-mcp/docx-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Model Context Protocol (MCP) server for DOCX document operations with comprehensive image support",
   "private": false,
   "type": "module",

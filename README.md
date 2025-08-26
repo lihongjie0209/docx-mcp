@@ -24,14 +24,27 @@ A Node.js MCP server that lets clients create, query, edit, and save DOCX docume
 ## JSON Schema
 See `src/schema.ts` for the full schema. Key concepts:
 - **meta**: Document metadata (title, subject, creator, etc.)
-- **content**: Array of blocks: heading, paragraph, table, image, codeBlock, list, pageBreak
+- **pageSettings**: Page size, orientation, margins, header/footer margins (NEW in v0.3.0)
+- **content**: Array of blocks: heading, paragraph, table, image, codeBlock, list, pageBreak, horizontalRule, blockquote, infoBox, textBox
 - **Enhanced blocks**:
   - **CodeBlock**: `{ type: "codeBlock", language: "javascript", code: "...", showLineNumbers: true }`
   - **List**: `{ type: "list", ordered: true, items: [...] }` with nesting support
+  - **Table**: Enhanced with backgroundColor, borders, verticalAlign, cell margins (NEW in v0.3.0)
+  - **HorizontalRule**: `{ type: "horizontalRule", style: "single", color: "#666" }` (NEW in v0.3.0)
+  - **Blockquote**: `{ type: "blockquote", children: [...], borderColor: "#ccc" }` (NEW in v0.3.0)
+  - **InfoBox**: `{ type: "infoBox", boxType: "info", title: "Note", children: [...] }` (NEW in v0.3.0)
+  - **TextBox**: `{ type: "textBox", children: [...] }` with border styling (NEW in v0.3.0)
   - **Enhanced TextRun**: Supports fontFamily, superScript, subScript, highlight, etc.
 - Each paragraph/heading uses inline runs (text, hyperlink) with rich formatting options
 
-## New in v0.2.0
+## New in v0.3.0 - Styles & Layout
+- ✅ **Page Settings**: Page size (A4, Letter, etc.), orientation, margins control
+- ✅ **Enhanced Tables**: Background colors, border styles, vertical alignment, table templates
+- ✅ **New Block Types**: Horizontal rules, blockquotes, info boxes, text boxes
+- ✅ **Advanced Styling**: More comprehensive table and cell formatting options
+
+## Previous Updates
+### v0.2.0 - Enhanced Document Operations
 - ✅ **Code Blocks**: Syntax highlighting for 180+ programming languages
 - ✅ **Lists**: Ordered and unordered lists with multiple styles and nesting
 - ✅ **Page Breaks**: Control document pagination

@@ -1,5 +1,5 @@
 // Test image support
-import { DocRegistry } from "./dist/docx-utils.js";
+import { DocRegistry } from "../dist/docx-utils.js";
 
 const registry = new DocRegistry();
 

@@ -1,4 +1,4 @@
-import { DocRegistry } from './dist/docx-utils.js';
+import { DocRegistry } from '../dist/docx-utils.js';
 import { nanoid } from 'nanoid';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
